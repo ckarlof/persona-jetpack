@@ -20,12 +20,11 @@ var PageMessaging = function() {
       window.addEventListener("message", function(event) {
         var messageWrapper = JSON.parse(event.data),
             message = messageWrapper.message;
-        if (messageWrapper.fromPage || !handlers[message.type]) return;
+        if (messageWrapper.fromPage || !handlers[messageWrapper.type]) return;
         var $dfd = $.Deferred();
         $dfd.then(function(message) {
           messageToChrome(messageWrapper.id, message);
-        });
-        $dfd.fail(function(error) {
+        }, function(error) {
           messageToChrome(messageWrapper.id, {}, error);
         });
         handlers[message.type](messageWrapper.message, $dfd);
