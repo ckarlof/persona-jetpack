@@ -16,6 +16,7 @@ var ContentScriptMessaging = function() {
   else { // for Firefox
     (function() {
       self.on("message", function(json) {
+        //console.log(json);
         var messageWrapper = JSON.parse(json);
         messageToPage(messageWrapper);
       });
