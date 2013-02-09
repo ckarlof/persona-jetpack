@@ -3,7 +3,8 @@ var PageMessaging = function() {
   var addChromeMessageListener,
       messageToChrome,
       addHandler,
-      on;
+      on,
+      postMessage;
 
   if (typeof chrome !== "undefined") { // for Chrome
 
@@ -22,23 +23,27 @@ var PageMessaging = function() {
       }
 
       window.addEventListener("message", function(event) {
-        var messageWrapper = JSON.parse(event.data),
-            message = messageWrapper.message,
+        var messageWrapper;
+        try {
+          messageWrapper = JSON.parse(event.data);
+        } catch(e) {
+          messageWrapper = {};
+        }
+        var message = messageWrapper.message || {},
             deferredId = messageWrapper.id,
             $dfd = undefined,
             type = message.type,
             args = message.args;
-                    console.log("message", messageWrapper);
-        if (messageWrapper.fromPage || !message) return;
+        if (messageWrapper.fromPage || !message) return; // Not for us
         if (deferredId) {
-          $dfd = $.Deferred();
-          $dfd.then(function(response) {
+          $dfd = Q.defer();
+          $dfd.promise.then(function(response) {
             messageToChrome(messageWrapper.id, response);
           }, function(error) {
             messageToChrome(messageWrapper.id, {}, error);
           });
         }
-        else if (type) {
+        if (type) {
           var subscriberList = subscribers["on"+type] || [];
           subscriberList.forEach(function(callback) {
             callback(args, $dfd);
@@ -53,12 +58,17 @@ var PageMessaging = function() {
         if (error) messageWrapper.error = error;
         //console.log("PageMessaging.messageToChrome: "+JSON.stringify(messageWrapper));
         document.defaultView.postMessage(JSON.stringify(messageWrapper), pageOrigin);
+      },
+
+      postMessage = function(message) {
+        messageToChrome(null, message, null);
       }
     })();
   }
   return {
     messageToChrome: messageToChrome,
-    on: on
+    on: on,
+    postMessage: postMessage
   };
 };
 
